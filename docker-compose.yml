@@ -1,0 +1,9 @@
+version: '3.8'  # Используем актуальную версию
+
+services:
+  speedtest:
+    build: .  # Указывает использовать Dockerfile в текущей папке
+    restart: unless-stopped
+    container_name: openspeedtest
+    ports:
+      - '3000:80'  # Теперь сайт будет на порту 80 внутри контейнера
