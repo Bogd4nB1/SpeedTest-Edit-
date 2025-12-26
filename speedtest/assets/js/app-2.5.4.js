@@ -1,3 +1,5 @@
+const API_URL = 'http://localhost:5000'
+
 window.onload = function() {
   var appSVG = document.getElementById("OpenSpeedTest-UI");
   appSVG.parentNode.replaceChild(appSVG.contentDocument.documentElement, appSVG);
@@ -994,31 +996,62 @@ window.onload = function() {
           var circleSVG = document.getElementById("oDoLiveSpeed");
           htmlAnchorElement.innerHTML = circleSVG.innerHTML;
           circleSVG.innerHTML = dummyElement.innerHTML;
+          console.log("Error");
         }
         if (Status === "SendR") {
-          Show.showStatus("All done");
-          var dummyElement = document.createElement("div");
-          dummyElement.innerHTML = '<a xlink:href="https://sirius-data.ru/" style="cursor: pointer" target="_blank"></a>';
-          var htmlAnchorElement = dummyElement.querySelector("a");
-          Show.oDoLiveSpeed.el.textContent = "";
-          var circleSVG = document.getElementById("oDoLiveSpeed");
-          htmlAnchorElement.innerHTML = circleSVG.innerHTML;
-          circleSVG.innerHTML = dummyElement.innerHTML;
-          if (location.hostname != myname.toLowerCase() + com) {
-            saveTestData = "https://" + myname.toLowerCase() + com + "/results/show.php?" + "&d=" + downloadSpeed.toFixed(3) + "&u=" + uploadSpeed.toFixed(3) + "&p=" + pingEstimate + "&j=" + jitterEstimate + "&dd=" + (dataUsedfordl / 1048576).toFixed(3) + "&ud=" + (dataUsedforul / 1048576).toFixed(3) + "&ua=" + userAgentString;
-            saveTestData = encodeURI(saveTestData);
-            var circleSVG2 = document.getElementById("resultsData");
-            circleSVG2.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", saveTestData);
-            circleSVG2.setAttribute("target", "_blank");
-            if (saveData) {
-              ServerConnect(5);
+          console.log("SendR");
+            Show.showStatus("All done");
+            
+            const resultsData = {
+                d: downloadSpeed.toFixed(3),
+                u: uploadSpeed.toFixed(3),
+                p: pingEstimate,
+                j: jitterEstimate,
+                dd: (dataUsedfordl / 1048576).toFixed(3),
+                ud: (dataUsedforul / 1048576).toFixed(3),
+                ua: userAgentString,
+                server_ip: TestServerip || myhostName,
+                hostname: location.hostname
+            };
+
+    // Асинхронная функция для отправки данных
+    async function saveResults() {
+        try {
+            console.log('Saving results to API...');
+            
+            const response = await fetch(API_URL +'/api/speedtest/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(resultsData)
+            });
+            
+            // Проверяем статус ответа
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-          } else {
-            ServerConnect(3);
-          }
-          Status = "busy";
-          clearInterval(Engine);
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Можно показать сообщение пользователю
+                Show.showStatus("SpeedTest DOS");
+            } else {
+                console.error('Failed to save results:', data.error);
+            }
+        } catch (error) {
+            Show.showStatus("Save error - check console");
         }
+    }
+    
+    // Запускаем сохранение
+    saveResults();
+    
+    Status = "busy";
+    clearInterval(Engine);
+}
+          
       }, 100);
     }
     function downReq() {
@@ -1361,6 +1394,7 @@ window.onload = function() {
     var ServerConnect = function(auth) {
       var Self = this;
       var xhr = new XMLHttpRequest();
+      var OpenSpeedTestdb = 0;
       var url = OpenSpeedTestdb;
       if (auth == 1) {
         url = webIP;

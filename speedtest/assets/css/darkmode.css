@@ -1,0 +1,65 @@
+/* Этот файл теперь дополняет CSS переменные */
+
+body.dark-theme {
+    background-color: var(--dark-bg, #181818) !important;
+}
+
+body.dark-theme #ipDesk {
+    fill: var(--dark-icon, aliceblue) !important;
+}
+
+body.dark-theme .oDoLive-Speed {
+    fill: var(--dark-accent, #ffffff) !important;
+}
+
+body.dark-theme .oDoLive-Status {
+    fill: var(--dark-icon, aliceblue) !important;
+}
+
+body.dark-theme #ipMob {
+    fill: var(--dark-icon, aliceblue) !important;
+}
+
+body.dark-theme .rtextnum {
+    fill: var(--dark-accent, #ffffff) !important;
+}
+
+body.dark-theme .rtextmbms {
+    fill: var(--dark-accent, #ffffff) !important;
+}
+
+body.dark-theme .rtext {
+    fill: var(--dark-accent, #ffffff) !important;
+}
+
+body.dark-theme .Cards {
+    fill: var(--dark-card, #000000) !important;
+}
+
+body.dark-theme .main-Gaugebg {
+    stroke: var(--dark-card, #000000) !important;
+}
+
+body.dark-theme .uiBg {
+    fill: var(--dark-card, #000000) !important;
+}
+
+body.dark-theme .progressbg {
+    stroke: var(--dark-border, #202020) !important;
+}
+
+body.dark-theme .jitter-Mob {
+    fill: var(--dark-accent, #ffffff) !important;
+}
+
+body.dark-theme .ConnectError {
+    fill: var(--dark-accent, #ffffff) !important;
+}
+
+/* Дополнительные плавные переходы */
+body.dark-theme,
+body.dark-theme * {
+    transition-property: background-color, color, fill, stroke !important;
+    transition-duration: 0.3s !important;
+    transition-timing-function: ease !important;
+}
