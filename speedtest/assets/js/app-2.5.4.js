@@ -800,14 +800,39 @@ window.onload = function() {
       Get.remEvt(document, "keypress", hiEnter);
     }
     var requestIP = false;
-    function ShowIP() {
-      if (requestIP) {
-        Show.YourIP.el.textContent = "Please wait..";
-        ServerConnect(7);
-        requestIP = false;
-      }
-      Show.ip();
+    async function getExternalIP() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        
+        // Обновляем отображение
+        Show.YourIP.el.textContent = data.ip;
+        
+        // Возвращаем IP для дальнейшего использования
+        return data.ip;
+    } catch (error) {
+        console.error('Error getting IP:', error);
+        Show.YourIP.el.textContent = "Error getting IP";
+        throw error; // Пробрасываем ошибку
     }
+}
+
+
+
+function ShowIP() {
+    if (requestIP) {
+        Show.YourIP.el.textContent = "Please wait..";
+        getExternalIP()
+            .then(ip => {
+                console.log("IP получен:", ip);
+            })
+            .catch(error => {
+                console.error("Ошибка получения IP:", error);
+            });
+        requestIP = false;
+    }
+    Show.ip();
+}
     function runTasks() {
       if (addEvent) {
         removeEvts();
@@ -987,31 +1012,32 @@ window.onload = function() {
         
         if (Status === "SendR") {
     Show.showStatus("All done");
-    
     const resultsData = {
-        d: downloadSpeed.toFixed(3),
-        u: uploadSpeed.toFixed(3),
-        p: pingEstimate,
-        j: jitterEstimate,
-        dd: (dataUsedfordl / 1048576).toFixed(3),
-        ud: (dataUsedforul / 1048576).toFixed(3),
-        ua: userAgentString,
-        server_ip: TestServerip || myhostName,
-        hostname: location.hostname
-    };
+    d: downloadSpeed.toFixed(3),
+    u: uploadSpeed.toFixed(3),
+    p: pingEstimate,
+    j: jitterEstimate,
+    dd: (dataUsedfordl / 1048576).toFixed(3),
+    ud: (dataUsedforul / 1048576).toFixed(3),
+    ua: userAgentString,
+    server_ip: getExternalIP().catch(() => TestServerip || myhostName || "unknown"), // Promise
+    hostname: location.hostname
+};
 
     // Асинхронная функция для отправки данных
     async function saveResults() {
         try {
-            console.log('Saving results to API...');
-            
-            const response = await fetch(API_URL + '/api/speedtest/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(resultsData)
-            });
+        // Создаем копию объекта с разрешенным Promise
+        const dataToSend = {
+            ...resultsData,
+            server_ip: await resultsData.server_ip  // Разрешаем Promise
+        };
+        
+        const response = await fetch(API_URL + '/api/speedtest/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(dataToSend)
+        });
             
             // Проверяем статус ответа
             if (!response.ok) {
