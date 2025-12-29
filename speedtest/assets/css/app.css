@@ -380,3 +380,61 @@ color: #14b0fe;
     display: none;
   }
 }
+
+/* Стили для истории тестов */
+#speedtest-history {
+    font-family: 'Roboto', sans-serif;
+}
+
+#speedtest-history::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+#speedtest-history::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#speedtest-history::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+#speedtest-history::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.history-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#result-details-modal {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.modal-overlay {
+    animation: overlayFadeIn 0.3s ease-out;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+

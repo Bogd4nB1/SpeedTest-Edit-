@@ -984,42 +984,28 @@ window.onload = function() {
             stop = 0;
           }
         }
-        if (Status === "Error") {
-          Show.showStatus("Check your network connection status.");
-          Show.ConnectionError();
-          Status = "busy";
-          clearInterval(Engine);
-          var dummyElement = document.createElement("div");
-          dummyElement.innerHTML = '<a xlink:href="https://sirius-data.ru/" style="cursor: pointer" target="_blank"></a>';
-          var htmlAnchorElement = dummyElement.querySelector("a");
-          Show.oDoLiveSpeed.el.textContent = "Network Error";
-          var circleSVG = document.getElementById("oDoLiveSpeed");
-          htmlAnchorElement.innerHTML = circleSVG.innerHTML;
-          circleSVG.innerHTML = dummyElement.innerHTML;
-          console.log("Error");
-        }
+        
         if (Status === "SendR") {
-          console.log("SendR");
-            Show.showStatus("All done");
-            
-            const resultsData = {
-                d: downloadSpeed.toFixed(3),
-                u: uploadSpeed.toFixed(3),
-                p: pingEstimate,
-                j: jitterEstimate,
-                dd: (dataUsedfordl / 1048576).toFixed(3),
-                ud: (dataUsedforul / 1048576).toFixed(3),
-                ua: userAgentString,
-                server_ip: TestServerip || myhostName,
-                hostname: location.hostname
-            };
+    Show.showStatus("All done");
+    
+    const resultsData = {
+        d: downloadSpeed.toFixed(3),
+        u: uploadSpeed.toFixed(3),
+        p: pingEstimate,
+        j: jitterEstimate,
+        dd: (dataUsedfordl / 1048576).toFixed(3),
+        ud: (dataUsedforul / 1048576).toFixed(3),
+        ua: userAgentString,
+        server_ip: TestServerip || myhostName,
+        hostname: location.hostname
+    };
 
     // Асинхронная функция для отправки данных
     async function saveResults() {
         try {
             console.log('Saving results to API...');
             
-            const response = await fetch(API_URL +'/api/speedtest/save', {
+            const response = await fetch(API_URL + '/api/speedtest/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1035,13 +1021,497 @@ window.onload = function() {
             const data = await response.json();
             
             if (data.success) {
-                // Можно показать сообщение пользователю
                 Show.showStatus("SpeedTest DOS");
+                // После успешного сохранения загружаем историю
+                await loadTestHistory();
             } else {
                 console.error('Failed to save results:', data.error);
             }
         } catch (error) {
+            console.error('Error saving results:', error);
             Show.showStatus("Save error - check console");
+        }
+    }
+    
+    // Глобальная переменная для хранения истории
+    if (typeof window.speedTestHistory === 'undefined') {
+        window.speedTestHistory = [];
+    }
+    
+    // Функция для загрузки истории тестов
+    async function loadTestHistory() {
+        try {
+            const response = await fetch(API_URL + '/api/speedtest/results', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Сохраняем историю в глобальной переменной
+                window.speedTestHistory = data.results || [];
+                // Отображаем историю тестов
+                displayTestHistory(window.speedTestHistory);
+            } else {
+                console.error('Failed to load history:', data.error);
+            }
+        } catch (error) {
+            console.error('Error loading test history:', error);
+        }
+    }
+    
+    // Функция для добавления нового результата в начало
+    function addNewResult(result) {
+        if (Array.isArray(window.speedTestHistory)) {
+            // Добавляем новый результат в начало массива
+            window.speedTestHistory.unshift(result);
+            // Обновляем отображение
+            displayTestHistory(window.speedTestHistory);
+        }
+    }
+    
+    // Функция для отображения истории тестов
+    function displayTestHistory(results) {
+        // Находим или создаем контейнер для истории
+        let historyContainer = document.getElementById('speedtest-history');
+        
+        if (!historyContainer) {
+            // Создаем контейнер если его нет
+            historyContainer = document.createElement('div');
+            historyContainer.id = 'speedtest-history';
+            historyContainer.className = 'history-container';
+            historyContainer.style.cssText = `
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #f2f2f2;
+                border-top: 2px solid #e7e7e8;
+                max-height: 35vh;
+                overflow-y: auto;
+                padding: 10px 15px;
+                font-family: 'Roboto', sans-serif;
+                z-index: 50;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                transition: all 0.3s ease;
+            `;
+            
+            // Заголовок истории с кнопками управления
+            const header = document.createElement('div');
+            header.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e0e0e0;
+            `;
+            
+            const title = document.createElement('h3');
+            title.textContent = 'История тестов';
+            title.style.cssText = `
+                margin: 0;
+                color: #333;
+                font-size: 14px;
+                font-weight: 500;
+                font-family: 'Roboto', sans-serif;
+            `;
+            header.appendChild(title);
+            
+            // Контейнер для кнопок
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                gap: 5px;
+                align-items: center;
+            `;
+            
+            // Кнопка обновления
+            const refreshButton = document.createElement('button');
+            refreshButton.innerHTML = '↻';
+            refreshButton.title = 'Обновить';
+            refreshButton.style.cssText = `
+                background: #56c4fb;
+                color: white;
+                border: none;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s;
+            `;
+            refreshButton.onmouseover = () => refreshButton.style.background = '#14b0fe';
+            refreshButton.onmouseout = () => refreshButton.style.background = '#56c4fb';
+            refreshButton.onclick = async () => {
+                await loadTestHistory();
+            };
+            buttonContainer.appendChild(refreshButton);
+            
+            // Кнопка сворачивания
+            const toggleButton = document.createElement('button');
+            toggleButton.innerHTML = '▼';
+            toggleButton.title = 'Свернуть';
+            toggleButton.style.cssText = `
+                background: #56c4fb;
+                color: white;
+                border: none;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s, transform 0.3s;
+            `;
+            toggleButton.onmouseover = () => toggleButton.style.background = '#14b0fe';
+            toggleButton.onmouseout = () => toggleButton.style.background = '#56c4fb';
+            
+            let isCollapsed = false;
+            toggleButton.onclick = () => {
+                const list = document.getElementById('history-list');
+                const table = document.getElementById('history-table');
+                if (list && table) {
+                    isCollapsed = !isCollapsed;
+                    list.style.display = isCollapsed ? 'none' : 'block';
+                    table.style.display = isCollapsed ? 'none' : 'table';
+                    toggleButton.innerHTML = isCollapsed ? '▲' : '▼';
+                    toggleButton.title = isCollapsed ? 'Развернуть' : 'Свернуть';
+                    toggleButton.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+                    
+                    // Изменяем высоту контейнера
+                    historyContainer.style.maxHeight = isCollapsed ? '60px' : '35vh';
+                }
+            };
+            buttonContainer.appendChild(toggleButton);
+            
+            header.appendChild(buttonContainer);
+            historyContainer.appendChild(header);
+            
+            // Контейнер для записей
+            const listContainer = document.createElement('div');
+            listContainer.id = 'history-list';
+            listContainer.style.cssText = `
+                transition: all 0.3s ease;
+            `;
+            historyContainer.appendChild(listContainer);
+            
+            document.body.appendChild(historyContainer);
+            
+            // Загружаем историю при создании контейнера
+            if (window.speedTestHistory.length === 0) {
+                loadTestHistory();
+            }
+        }
+        
+        // Обновляем список записей
+        const listContainer = document.getElementById('history-list');
+        listContainer.innerHTML = '';
+        
+        // Сортируем результаты по дате (новые сверху)
+        const sortedResults = [...results].sort((a, b) => 
+            new Date(b.created_at) - new Date(a.created_at)
+        );
+        
+        // Ограничиваем количество отображаемых записей (10 последних)
+        const recentResults = sortedResults.slice(0, 10);
+        
+        if (recentResults.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.textContent = 'Нет данных о тестах. Запустите первый тест.';
+            emptyMessage.style.cssText = `
+                text-align: center;
+                padding: 20px;
+                color: #666;
+                font-style: italic;
+                font-size: 14px;
+            `;
+            listContainer.appendChild(emptyMessage);
+            return;
+        }
+        
+        // Создаем таблицу для отображения
+        const table = document.createElement('table');
+        table.id = 'history-table';
+        table.style.cssText = `
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin: 0;
+        `;
+        
+        // Заголовок таблицы
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th style="text-align: left; padding: 8px 5px; border-bottom: 2px solid #e0e0e0; font-weight: 500; color: #666; font-size: 11px;">Время</th>
+                <th style="text-align: right; padding: 8px 5px; border-bottom: 2px solid #e0e0e0; font-weight: 500; color: #666; font-size: 11px;">↓ Мбит/с</th>
+                <th style="text-align: right; padding: 8px 5px; border-bottom: 2px solid #e0e0e0; font-weight: 500; color: #666; font-size: 11px;">↑ Мбит/с</th>
+                <th style="text-align: right; padding: 8px 5px; border-bottom: 2px solid #e0e0e0; font-weight: 500; color: #666; font-size: 11px;">Пинг</th>
+                <th style="text-align: right; padding: 8px 5px; border-bottom: 2px solid #e0e0e0; font-weight: 500; color: #666; font-size: 11px;">Джиттер</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+        
+        // Тело таблицы
+        const tbody = document.createElement('tbody');
+        
+        recentResults.forEach((result, index) => {
+            const row = document.createElement('tr');
+            row.className = 'history-row';
+            row.style.cssText = `
+                background-color: ${index % 2 === 0 ? 'white' : '#f9f9f9'};
+                cursor: pointer;
+                transition: background-color 0.2s;
+            `;
+            row.onmouseover = () => row.style.backgroundColor = '#e8f4fd';
+            row.onmouseout = () => row.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9f9f9';
+            row.onclick = () => showResultDetails(result);
+            
+            // Форматируем дату
+            const date = new Date(result.created_at);
+            const timeString = date.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = date.toLocaleDateString();
+            
+            // Определяем стиль для скорости (чем выше - тем лучше)
+            const downloadSpeed = parseFloat(result.download_speed || 0);
+            const uploadSpeed = parseFloat(result.upload_speed || 0);
+            
+            row.innerHTML = `
+                <td style="padding: 8px 5px; border-bottom: 1px solid #f0f0f0; font-size: 11px;">
+                    <div style="font-weight: 500;">${dateString}</div>
+                    <div style="color: #666; font-size: 10px;">${timeString}</div>
+                </td>
+                <td style="text-align: right; padding: 8px 5px; border-bottom: 1px solid #f0f0f0;">
+                    <span style="font-weight: 500; color: ${downloadSpeed > 100 ? '#4caf50' : downloadSpeed > 50 ? '#2196f3' : '#ff9800'}">
+                        ${downloadSpeed.toFixed(1)}
+                    </span>
+                    <div style="font-size: 10px; color: #999;">Мбит/с</div>
+                </td>
+                <td style="text-align: right; padding: 8px 5px; border-bottom: 1px solid #f0f0f0;">
+                    <span style="font-weight: 500; color: ${uploadSpeed > 50 ? '#4caf50' : uploadSpeed > 20 ? '#2196f3' : '#ff9800'}">
+                        ${uploadSpeed.toFixed(1)}
+                    </span>
+                    <div style="font-size: 10px; color: #999;">Мбит/с</div>
+                </td>
+                <td style="text-align: right; padding: 8px 5px; border-bottom: 1px solid #f0f0f0; font-weight: 500;">
+                    <span style="color: ${result.ping < 20 ? '#4caf50' : result.ping < 50 ? '#2196f3' : '#ff9800'}">
+                        ${result.ping}
+                    </span>
+                    <div style="font-size: 10px; color: #999;">мс</div>
+                </td>
+                <td style="text-align: right; padding: 8px 5px; border-bottom: 1px solid #f0f0f0; font-weight: 500;">
+                    <span style="color: ${result.jitter < 5 ? '#4caf50' : result.jitter < 10 ? '#2196f3' : '#ff9800'}">
+                        ${result.jitter}
+                    </span>
+                    <div style="font-size: 10px; color: #999;">мс</div>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+        
+        table.appendChild(tbody);
+        listContainer.appendChild(table);
+        
+        // Добавляем подпись с количеством записей
+        const caption = document.createElement('div');
+        caption.style.cssText = `
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            font-family: 'Roboto', sans-serif;
+        `;
+        caption.innerHTML = `Показано <strong>${recentResults.length}</strong> ${recentResults.length === 1 ? 'запись' : recentResults.length < 5 ? 'записи' : 'записей'} из ${results.length}`;
+        listContainer.appendChild(caption);
+    }
+    
+    // Функция для показа деталей результата (оставляем без изменений, но убираем наложение на историю)
+    function showResultDetails(result) {
+        // Закрываем предыдущее модальное окно если есть
+        const existingModal = document.getElementById('result-details-modal');
+        if (existingModal) {
+            document.body.removeChild(existingModal);
+        }
+        const existingOverlay = document.querySelector('.modal-overlay');
+        if (existingOverlay) {
+            document.body.removeChild(existingOverlay);
+        }
+        
+        // Создаем модальное окно
+        const modal = document.createElement('div');
+        modal.id = 'result-details-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 500px;
+            width: 90%;
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        `;
+        
+        // Форматируем дату
+        const date = new Date(result.created_at);
+        const formattedDate = date.toLocaleString();
+        
+        // Заполняем содержимое с улучшенным дизайном
+        modal.innerHTML = `
+            <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 500; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                Детали теста
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div style="font-size: 12px;">
+                    <div style="color: #666; font-size: 11px; margin-bottom: 3px;">Дата и время</div>
+                    <div style="font-weight: 500;">${formattedDate}</div>
+                </div>
+                <div style="font-size: 12px;">
+                    <div style="color: #666; font-size: 11px; margin-bottom: 3px;">IP адрес</div>
+                    <div style="font-weight: 500; font-family: monospace;">${result.ip_address || 'Не указан'}</div>
+                </div>
+                <div style="font-size: 12px;">
+                    <div style="color: #666; font-size: 11px; margin-bottom: 3px;">Сервер</div>
+                    <div style="font-weight: 500;">${result.server_ip || result.hostname || 'Не указан'}</div>
+                </div>
+                <div style="font-size: 12px;">
+                    <div style="color: #666; font-size: 11px; margin-bottom: 3px;">Данные</div>
+                    <div style="font-weight: 500;">${result.download_data_mb} МБ ↓ / ${result.upload_data_mb} МБ ↑</div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 8px; border: 1px solid #90caf9;">
+                    <div style="font-size: 24px; font-weight: bold; color: #1565c0;">
+                        ${parseFloat(result.download_speed).toFixed(2)}
+                    </div>
+                    <div style="font-size: 13px; color: #1976d2; margin-top: 5px;">Мбит/с</div>
+                    <div style="font-size: 11px; color: #42a5f5; margin-top: 5px;">Скачивание</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #e8f5e8, #c8e6c9); border-radius: 8px; border: 1px solid #a5d6a7;">
+                    <div style="font-size: 24px; font-weight: bold; color: #2e7d32;">
+                        ${parseFloat(result.upload_speed).toFixed(2)}
+                    </div>
+                    <div style="font-size: 13px; color: #388e3c; margin-top: 5px;">Мбит/с</div>
+                    <div style="font-size: 11px; color: #66bb6a; margin-top: 5px;">Загрузка</div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 6px; border-left: 4px solid #2196f3;">
+                    <div style="font-weight: bold; font-size: 18px; color: #1976d2;">${result.ping}</div>
+                    <div style="font-size: 12px; color: #666;">Пинг (мс)</div>
+                </div>
+                <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 6px; border-left: 4px solid #4caf50;">
+                    <div style="font-weight: bold; font-size: 18px; color: #388e3c;">${result.jitter}</div>
+                    <div style="font-size: 12px; color: #666;">Джиттер (мс)</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <div style="color: #666; font-size: 11px; margin-bottom: 5px;">User Agent:</div>
+                <div style="font-size: 11px; color: #888; background: #f9f9f9; padding: 8px; border-radius: 4px; font-family: monospace; word-break: break-all;">
+                    ${result.user_agent || 'Не указан'}
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="close-details" style="
+                    background: linear-gradient(135deg, #56c4fb, #14b0fe);
+                    color: white;
+                    border: none;
+                    padding: 10px 25px;
+                    border-radius: 20px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 500;
+                    transition: all 0.2s;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" 
+                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)'">Закрыть</button>
+            </div>
+        `;
+        
+        // Затемнение фона
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            backdrop-filter: blur(2px);
+        `;
+        
+        // Функция закрытия
+        function closeModal() {
+            document.body.removeChild(modal);
+            document.body.removeChild(overlay);
+        }
+        
+        overlay.onclick = closeModal;
+        modal.querySelector('#close-details').onclick = closeModal;
+        
+        // Добавляем в документ
+        document.body.appendChild(overlay);
+        document.body.appendChild(modal);
+        
+        // Блокируем скролл фона
+        document.body.style.overflow = 'hidden';
+        
+        // Возвращаем скролл при закрытии
+        overlay.addEventListener('click', () => {
+            document.body.style.overflow = '';
+        });
+        modal.querySelector('#close-details').addEventListener('click', () => {
+            document.body.style.overflow = '';
+        });
+    }
+    
+    // Инициализация истории при загрузке страницы
+    if (typeof window.initTestHistory !== 'function') {
+        window.initTestHistory = function() {
+            // Создаем контейнер истории
+            displayTestHistory(window.speedTestHistory || []);
+            // Загружаем историю с сервера
+            setTimeout(() => loadTestHistory(), 500);
+        };
+        
+        // Инициализируем после полной загрузки страницы
+        if (document.readyState === 'complete') {
+            window.initTestHistory();
+        } else {
+            window.addEventListener('load', window.initTestHistory);
         }
     }
     

@@ -63,3 +63,83 @@ body.dark-theme * {
     transition-duration: 0.3s !important;
     transition-timing-function: ease !important;
 }
+
+/* Стили для истории тестов в темной теме */
+body.dark-theme #speedtest-history {
+    background-color: #1e1e1e !important;
+    border-top: 2px solid #333 !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-theme #speedtest-history h3 {
+    color: #e0e0e0 !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+body.dark-theme #speedtest-history th {
+    color: #aaa !important;
+    border-bottom: 2px solid #333 !important;
+}
+
+body.dark-theme #speedtest-history td {
+    color: #ddd !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+body.dark-theme #speedtest-history tr:nth-child(even) {
+    background-color: #252525 !important;
+}
+
+body.dark-theme #speedtest-history tr:nth-child(odd) {
+    background-color: #2a2a2a !important;
+}
+
+body.dark-theme #speedtest-history tr:hover {
+    background-color: #323232 !important;
+}
+
+body.dark-theme #speedtest-history button {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+
+body.dark-theme #speedtest-history button:hover {
+    background-color: #444 !important;
+}
+
+body.dark-theme #speedtest-history::-webkit-scrollbar-track {
+    background: #2a2a2a;
+}
+
+body.dark-theme #speedtest-history::-webkit-scrollbar-thumb {
+    background: #555;
+}
+
+body.dark-theme #speedtest-history::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+body.dark-theme #result-details-modal {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #444 !important;
+}
+
+body.dark-theme #result-details-modal h3 {
+    color: #fff !important;
+    border-bottom: 1px solid #444 !important;
+}
+
+body.dark-theme #result-details-modal > div > div {
+    background-color: #333 !important;
+    border: 1px solid #444 !important;
+}
+
+body.dark-theme #result-details-modal .modal-overlay {
+    background: rgba(0, 0, 0, 0.7) !important;
+}
+
+body.dark-theme #result-details-modal button {
+    background: linear-gradient(135deg, #1565c0, #1976d2) !important;
+    color: white !important;
+}
